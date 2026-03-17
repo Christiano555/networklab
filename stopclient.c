@@ -50,11 +50,11 @@ void main()
 
         if(valread>0 && strncmp(buffer,"ACK",3)==0)
         {
-            printf("Client:ACK for packet %s recieved\n\n",packet);
+            printf("Client:ACK recieved for packet %s",packet);
         }
         else
         {
-            printf("TIMEOUT.....Retransmit the packet\n\n");
+            printf("TIMEOUT.....Retransmit the packet\n");
         }
 
     }

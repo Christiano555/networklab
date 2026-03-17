@@ -25,6 +25,9 @@ void main()
         exit(1);
     }
 
+    int opt=1;
+    setsockopt(servfd,SOL_SOCKET,SO_REUSEADDR | SO_REUSEPORT,&opt,sizeof(opt));
+
     address.sin_family=AF_INET;
     address.sin_addr.s_addr=INADDR_ANY;
     address.sin_port=htons(port);
@@ -52,16 +55,16 @@ void main()
             break;
         }
 
-        printf("Server: packet %s recieved\n",buffer);
+        printf("Server: Recieved packet %s",buffer);
 
         if(rand()%100<ackprob)
         {
-            printf("Server: ACK for packet %s sent\n\n",buffer);
+            printf("Server: ACK sent for packet %s",buffer);
             send(newsocket,"ACK",strlen("ACK"),0);
         }
         else
         {
-             printf("Server: ACK for packet %s lost\n\n",buffer);           
+             printf("Server: ACK lost for packet %s",buffer);           
         }
 
     }
