@@ -1,74 +1,82 @@
 #include <stdio.h>
-#include <time.h>
-#include <sys/socket.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <string.h>
 #include <sys/time.h>
 
-#define port 8090
-#define timestop 3
+#define PORT 8090
+#define BUFFER_SIZE 1024
+#define TIMEOUT 3
 
-void main()
-{
-    int sockfd=0;
-    struct sockaddr_in servaddr;
-    int ack;
-    char buffer[1024];
+int main() {
+    int sock = 0;
+    struct sockaddr_in serv_addr;
+    char buffer[BUFFER_SIZE] = {0};
     struct timeval tv;
 
-    int window,packet;
-    printf("Enter window size:");
-    scanf("%d",&window);
+    int WINDOW_SIZE, TOTAL_PACKETS;
 
-    printf("Enter no.of packets:");
-    scanf("%d",&packet);
+    printf("Enter the window size: ");
+    scanf("%d", &WINDOW_SIZE);
+    printf("Enter the total number of packets: ");
+    scanf("%d", &TOTAL_PACKETS);
 
-    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
 
-    servaddr.sin_family=AF_INET;
-    servaddr.sin_port=htons(port);
-    inet_pton(AF_INET,"127.0.0.1",&servaddr.sin_addr);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
 
-    connect(sockfd,(struct sockaddr*)&servaddr,sizeof(servaddr));
-    printf("Client: server connected.....\n");
+    inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
-    tv.tv_sec=timestop;
-    tv.tv_usec=0;
-    setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(const char*)&tv,sizeof(tv));
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);
+    }
 
-    int base=1;
-    int nextsend=1;
-    int getack=0;
+    printf("\nClient: Connected to server.\n");
 
-    while(getack<packet)
-    {
-        while(nextsend<base+window&&nextsend<=packet)
-        {
-            printf("Client: packet %d sent\n",nextsend);
-            memset(buffer,0,sizeof(buffer));
-            sprintf(buffer,"%d",nextsend);
-            send(sockfd,buffer,strlen(buffer),0);
-            nextsend++;
+    tv.tv_sec = TIMEOUT;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+
+    int base = 1;
+    int next_to_send = 1;
+    int ack, packets_acked = 0;
+
+    while (packets_acked < TOTAL_PACKETS) {
+
+        // Send packets in window
+        while (next_to_send < base + WINDOW_SIZE && next_to_send <= TOTAL_PACKETS) {
+            memset(buffer, 0, BUFFER_SIZE);
+            printf("Client: Sending packet %d\n", next_to_send);
+            sprintf(buffer, "%d", next_to_send);
+            send(sock, buffer, strlen(buffer) + 1, 0);
+            next_to_send++;
         }
-        memset(buffer,0,sizeof(buffer));
-        int valread=read(sockfd,buffer,sizeof(buffer));
-        if (valread>0)
-        {
-            ack=atoi(buffer);
-            printf("Client:ACK of %d packed recieved\n",ack);
-            if(ack==base)
-            {
-                base=ack+1;
-                getack=ack;
+
+        // Wait for ACK
+        memset(buffer, 0, BUFFER_SIZE);
+        int valread = read(sock, buffer, BUFFER_SIZE);
+
+        if (valread > 0) {
+            ack = atoi(buffer);
+            printf("Client: ACK received for packet %d\n", ack);
+
+            if (ack >= base) {
+                base = ack + 1;
+                packets_acked = ack;
             }
-        }
-        else
-        {
-            printf("Client:Timeout......retransmitting from packet %d",base);
-            nextsend=base;
+        } else {
+            printf("Client: Timeout! Retransmitting from packet %d...\n", base);
+            next_to_send = base;
         }
     }
-    close(sockfd);
+
+    printf("\nClient: All packets sent successfully.\n");
+    close(sock);
+    return 0;
 }
