@@ -17,7 +17,6 @@ void main()
     int bytes;
     struct timeval tv;
 
-
     sockfd=socket(AF_INET,SOCK_STREAM,0);
     address.sin_family=AF_INET;
     address.sin_port=htons(port);
@@ -34,23 +33,36 @@ void main()
     {
         printf("Enter the packet:");
         scanf("%s",packet);
+
         send(sockfd,packet,strlen(packet),0);
+
         if(strncmp(packet,"exit",4)==0)
         {
             break;
         }
+
         memset(buffer,0,sizeof(buffer));
         bytes=read(sockfd,buffer,sizeof(buffer));
+
         if(bytes>0&&(strncmp(buffer,"ACK",3)==0))
         {
             printf("Client:-Ack recived for packet %s\n",packet);
         }
         else
         {
-            printf("Timeout retransmitting the packet.....\n");
-            printf("packet %s retransmitted\n",packet);
-            printf("Ack recieved for packet %s\n",packet);
+            printf("Timeout retransmitting the packet %s.....\n",packet);
+
+            // retransmit once
+            send(sockfd,packet,strlen(packet),0);
+
+            memset(buffer,0,sizeof(buffer));
+            bytes=read(sockfd,buffer,sizeof(buffer));
+
+            if(bytes>0&&(strncmp(buffer,"ACK",3)==0))
+            {
+                printf("Client:-Ack recived after retransmission for packet %s\n",packet);
+            }
         }
     }
     close(sockfd);
-}   
+}
