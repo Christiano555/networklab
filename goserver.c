@@ -18,7 +18,7 @@ void main()
     int loss=30;
 
     srand(time(0));
-    if(sockfd=socket(AF_INET,SOCK_STREAM,0)<0)
+    if((sockfd=socket(AF_INET,SOCK_STREAM,0))<0)
     {
         perror("Socket creation failed!!\n");
         exit(1);
@@ -29,13 +29,11 @@ void main()
     address.sin_family=AF_INET;
     address.sin_addr.s_addr=INADDR_ANY;
     address.sin_port=htons(port);
-    bind(sockfd,(struct sockaddr*)&address,sizeof(address));
-    
-   // if(bind(sockfd,(struct sockaddr*)&address,sizeof(address))<0)
-   // {
-     //   perror("Bind failed\n");
-      //  exit(1);
-    //}
+    if(bind(sockfd,(struct sockaddr*)&address,sizeof(address))<0)
+    {
+        perror("Bind failed\n");
+        exit(1);
+    }
 
     if(listen(sockfd,3)<0)
     {
@@ -43,7 +41,7 @@ void main()
         exit(1);
     }
     printf("Server ready for connection...\n");
-    if(newsock=accept(sockfd,(struct sockaddr*)&address,&len))
+    if((newsock=accept(sockfd,(struct sockaddr*)&address,&len))<0)
     {
         perror("Client connection failed\n");
         exit(1);
