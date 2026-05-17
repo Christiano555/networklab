@@ -47,28 +47,49 @@ void main()
         exit(1);
     }
     printf("Server connected....\n");
-    while(1)
+int expected = 1;
+
+while(1)
+{
+    memset(buffer,0,sizeof(buffer));
+    bytes = read(newsock, buffer, sizeof(buffer));
+
+    if(bytes == 0)
     {
-        memset(buffer,0,sizeof(buffer));
-        bytes=read(newsock,buffer,sizeof(buffer));
-        if(bytes<0)
-        {
-            printf("Client send all the packets\n");
-            break;
-        }
-        printf("Server: packet %s recieved\n",buffer);
-        int ack=atoi(buffer);
-        if(rand()%100<loss)
-        {
-            printf("Server:- Ack for packet %d lost\n",ack);
-        }
-        else
-        {
-            memset(buffer,0,sizeof(buffer));
-            sprintf(buffer,"%d",ack);
-            send(newsock,buffer,strlen(buffer)+1,0);
-        }
+        printf("Client finished sending packets\n");
+        break;
     }
+    if(bytes < 0)
+    {
+        perror("Read error");
+        break;
+    }
+
+    int pkt = atoi(buffer);
+    printf("Server: packet %d received\n", pkt);
+
+    if(pkt == expected)
+    {
+        expected++;
+    }
+    else
+    {
+        printf("Out-of-order packet discarded\n");
+    }
+
+    int ack = expected - 1;
+
+    if(rand()%100 < loss)
+    {
+        printf("ACK %d lost\n", ack);
+    }
+    else
+    {
+        printf("ACK %d sent\n", ack);
+        sprintf(buffer,"%d",ack);
+        send(newsock,buffer,strlen(buffer)+1,0);
+    }
+}
     close(sockfd);
     close(newsock);
 }
