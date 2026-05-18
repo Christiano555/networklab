@@ -62,7 +62,7 @@ void main()
         {
             pack=atoi(message);
             printf("Client:Ack for packet %d recieved\n",pack);
-            if(base==pack)
+            if(pack>=base)
             {
                 base=pack+1;
                 pckack=pack;
